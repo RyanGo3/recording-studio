@@ -4,6 +4,7 @@ __pycache__/
 *.py[cod]
 tools/*.exe
 tools/*.zip
+tools/*.download
 wheelhouse/
 builds/
 releases/

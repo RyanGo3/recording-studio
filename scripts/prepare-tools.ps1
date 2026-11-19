@@ -1,11 +1,13 @@
 param([switch]$ForceDownload)
 $ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"
 $ProjectDir = Split-Path -Parent $PSScriptRoot
 $ToolDir = Join-Path $ProjectDir "tools"
 $LicenseDir = Join-Path $ProjectDir "licenses\ffmpeg"
 $Version = "8.1.2"
 $ArchiveName = "ffmpeg-$Version-essentials_build.zip"
-$Url = "https://www.gyan.dev/ffmpeg/builds/packages/$ArchiveName"
+$Url = "https://github.com/GyanD/codexffmpeg/releases/download/$Version/$ArchiveName"
+$FallbackUrl = "https://www.gyan.dev/ffmpeg/builds/packages/$ArchiveName"
 $PinnedArchiveHash = "db580001caa24ac104c8cb856cd113a87b0a443f7bdf47d8c12b1d740584a2ec"
 $PinnedExeHash = "1326dde4c84ff1f96fe6b8916c5bed29e163e9b5dccf995f6f3db069d143ec5e"
 $Archive = Join-Path $ToolDir $ArchiveName
@@ -25,14 +27,31 @@ if ((Test-Path -LiteralPath $Dest) -and -not $ForceDownload) {
 if (Test-Path -LiteralPath $Dest) {
     throw "tools\ffmpeg.exe already exists. Save it elsewhere before continuing."
 }
-$Checksum = ([string](Invoke-WebRequest -Uri "$Url.sha256" -UseBasicParsing).Content).Trim().Split()[0].ToLowerInvariant()
-if ($Checksum -notmatch '^[0-9a-f]{64}$') { throw "Invalid upstream SHA-256 response." }
-if ($Checksum -ne $PinnedArchiveHash) { throw "Upstream SHA-256 differs from the pinned release." }
 if (-not (Test-Path -LiteralPath $Archive)) {
-    Invoke-WebRequest -Uri $Url -OutFile $Archive -UseBasicParsing
+    $Downloaded = $false
+    foreach ($CandidateUrl in @($Url, $FallbackUrl)) {
+        for ($Attempt = 1; $Attempt -le 3; $Attempt++) {
+            $Pending = Join-Path $ToolDir ("$ArchiveName." + [guid]::NewGuid().ToString("N") + ".download")
+            try {
+                Invoke-WebRequest -Uri $CandidateUrl -OutFile $Pending -UseBasicParsing -TimeoutSec 180
+                $PendingHash = (Get-FileHash -LiteralPath $Pending -Algorithm SHA256).Hash.ToLowerInvariant()
+                if ($PendingHash -ne $PinnedArchiveHash) { throw "Downloaded FFmpeg archive has an unexpected SHA-256." }
+                Move-Item -LiteralPath $Pending -Destination $Archive
+                $Downloaded = $true
+                $Url = $CandidateUrl
+                break
+            }
+            catch {
+                Write-Warning "FFmpeg download attempt $Attempt failed: $($_.Exception.Message)"
+                if ($Attempt -lt 3) { Start-Sleep -Seconds (2 * $Attempt) }
+            }
+        }
+        if ($Downloaded) { break }
+    }
+    if (-not $Downloaded) { throw "Unable to download the pinned FFmpeg archive from either upstream source." }
 }
 $Actual = (Get-FileHash -LiteralPath $Archive -Algorithm SHA256).Hash.ToLowerInvariant()
-if ($Actual -ne $Checksum) { throw "FFmpeg SHA-256 verification failed. Check the retained download." }
+if ($Actual -ne $PinnedArchiveHash) { throw "FFmpeg SHA-256 verification failed. Check the retained download." }
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $Zip = [IO.Compression.ZipFile]::OpenRead($Archive)
 try {

@@ -14,7 +14,7 @@
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\prepare-tools.ps1
 ```
 
-脚本下载固定版本 ZIP 和上游 SHA-256，校验后只提取 `ffmpeg.exe`、许可和说明。保留下载缓存，不删除现有文件；如目标 FFmpeg 已存在则先验证版本并复用。
+脚本优先从 Gyan 官方 GitHub Release 下载固定版本 ZIP，失败后重试并回退到其官网，使用已核对的上游 SHA-256 固定值校验，只提取 `ffmpeg.exe`、许可和说明。保留下载缓存，不删除现有文件；如目标 FFmpeg 已存在则先验证版本和散列并复用。
 
 也可自行安装 FFmpeg，放到 `tools\ffmpeg.exe`。自备版本至少应提供 `gdigrab`、`libx264`、`aac`、`libmp3lame`、PNG、`afftdn`、`alimiter` 及通用音视频拼接 / 缩放过滤器。替换后应重新运行测试。
 

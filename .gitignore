@@ -1,0 +1,17 @@
+# 本地环境、工具二进制与构建产物通过 Release 分发。
+.venv/
+__pycache__/
+*.py[cod]
+tools/*.exe
+tools/*.zip
+wheelhouse/
+builds/
+releases/
+packages/
+test-artifacts/
+*.spec
+*.log
+.env
+.env.*
+.DS_Store
+Thumbs.db

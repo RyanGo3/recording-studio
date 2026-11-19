@@ -241,11 +241,20 @@ class AppleUITests(unittest.TestCase):
             stack.extend(widget.winfo_children())
         self.assertEqual(len(cards), 3)
 
-    def test_editor_controls_fit_and_breadcrumb_tracks_page(self):
+    def test_editor_controls_reachable_and_breadcrumb_tracks_page(self):
         self.ui._show_page("edit")
-        self.root.update()
-        bbox = self.ui.edit_canvas.bbox("all")
-        self.assertLessEqual(bbox[3], self.ui.edit_canvas.winfo_height() + 20)
+        for geometry in ("1160x860", "1040x700"):
+            self.root.geometry(geometry)
+            self.root.update()
+            bbox = self.ui.edit_canvas.bbox("all")
+            if bbox[3] > self.ui.edit_canvas.winfo_height() + 20:
+                self.ui.edit_canvas.yview_moveto(1)
+                self.root.update()
+                top, bottom = self.ui.edit_canvas.yview()
+                self.assertGreater(top, 0)
+                self.assertAlmostEqual(bottom, 1, places=2)
+            else:
+                self.assertLessEqual(bbox[3], self.ui.edit_canvas.winfo_height() + 20)
         self.assertEqual(self.ui.breadcrumb_var.get(), "工作空间  /  剪辑与导出")
         self.assertTrue(self.ui.nav_edit.active)
         self.assertFalse(self.ui.nav_record.active)

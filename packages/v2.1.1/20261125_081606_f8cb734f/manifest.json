@@ -34,21 +34,24 @@
   "assets": [
     {
       "name": "PotatoFactory-v2.1.1-macos-x86_64.zip",
+      "label": "PotatoFactory-v2.1.1-macos-x86_64.zip",
       "bytes": 68455365,
       "sha256": "f50084e991d8665b5b444b8a15f3f282c26e0ba043d1e56163862e0b2c250b3d",
       "download_url": "https://github.com/RyanGo3/recording-studio/releases/download/v2.1.1/PotatoFactory-v2.1.1-macos-x86_64.zip"
     },
     {
-      "name": "土豆工厂-MacIntel版简易说明.txt",
+      "name": "PotatoFactory-v2.1.1-macos-x86_64-QuickStart-zh-CN.txt",
+      "label": "土豆工厂-MacIntel版简易说明.txt",
       "bytes": 1458,
       "sha256": "e92f2cac8a57c65edd010ebf09bff327fe0e073b68763b70b1067f39d0c00905",
-      "download_url": "https://github.com/RyanGo3/recording-studio/releases/download/v2.1.1/%E5%9C%9F%E8%B1%86%E5%B7%A5%E5%8E%82-MacIntel%E7%89%88%E7%AE%80%E6%98%93%E8%AF%B4%E6%98%8E.txt"
+      "download_url": "https://github.com/RyanGo3/recording-studio/releases/download/v2.1.1/PotatoFactory-v2.1.1-macos-x86_64-QuickStart-zh-CN.txt"
     },
     {
-      "name": "土豆工厂-Mac Intel版使用说明.txt",
+      "name": "PotatoFactory-v2.1.1-macos-x86_64-UserGuide-zh-CN.txt",
+      "label": "土豆工厂-Mac Intel版使用说明.txt",
       "bytes": 10890,
       "sha256": "a7fa03b979be05f1a767c9c9677a9d3e41094fe89b04d846adf5c914e665dc5e",
-      "download_url": "https://github.com/RyanGo3/recording-studio/releases/download/v2.1.1/%E5%9C%9F%E8%B1%86%E5%B7%A5%E5%8E%82-Mac%20Intel%E7%89%88%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E.txt"
+      "download_url": "https://github.com/RyanGo3/recording-studio/releases/download/v2.1.1/PotatoFactory-v2.1.1-macos-x86_64-UserGuide-zh-CN.txt"
     }
   ]
 }

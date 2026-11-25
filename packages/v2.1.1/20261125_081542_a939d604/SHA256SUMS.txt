@@ -1,3 +1,3 @@
 b50fd01608f6eecc7956a68367c722f9c5d919937e6b8c5fb2f8ee1852a6c9c3  PotatoFactory-v2.1.1-macos-arm64.zip
-7dc7af64d9be0217fdabee3f3467c4ededf0076571f5f447d08102bdc7e231d2  土豆工厂-Mac苹果M系列版简易说明.txt
-a7fa03b979be05f1a767c9c9677a9d3e41094fe89b04d846adf5c914e665dc5e  土豆工厂-Mac苹果M系列版使用说明.txt
+7dc7af64d9be0217fdabee3f3467c4ededf0076571f5f447d08102bdc7e231d2  PotatoFactory-v2.1.1-macos-arm64-QuickStart-zh-CN.txt
+a7fa03b979be05f1a767c9c9677a9d3e41094fe89b04d846adf5c914e665dc5e  PotatoFactory-v2.1.1-macos-arm64-UserGuide-zh-CN.txt

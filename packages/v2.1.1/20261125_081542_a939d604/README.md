@@ -2,7 +2,7 @@
 
 适用 macOS 15.0 及以上。构建：`20261125_081542_a939d604`。
 
-[下载安装包](https://github.com/RyanGo3/recording-studio/releases/download/v2.1.1/PotatoFactory-v2.1.1-macos-arm64.zip) · [简易说明 TXT](https://github.com/RyanGo3/recording-studio/releases/download/v2.1.1/%E5%9C%9F%E8%B1%86%E5%B7%A5%E5%8E%82-Mac%E8%8B%B9%E6%9E%9CM%E7%B3%BB%E5%88%97%E7%89%88%E7%AE%80%E6%98%93%E8%AF%B4%E6%98%8E.txt) · [详细说明 TXT](https://github.com/RyanGo3/recording-studio/releases/download/v2.1.1/%E5%9C%9F%E8%B1%86%E5%B7%A5%E5%8E%82-Mac%E8%8B%B9%E6%9E%9CM%E7%B3%BB%E5%88%97%E7%89%88%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E.txt)
+[下载安装包](https://github.com/RyanGo3/recording-studio/releases/download/v2.1.1/PotatoFactory-v2.1.1-macos-arm64.zip) · [简易说明 TXT](https://github.com/RyanGo3/recording-studio/releases/download/v2.1.1/PotatoFactory-v2.1.1-macos-arm64-QuickStart-zh-CN.txt) · [详细说明 TXT](https://github.com/RyanGo3/recording-studio/releases/download/v2.1.1/PotatoFactory-v2.1.1-macos-arm64-UserGuide-zh-CN.txt)
 
 - 文件：`PotatoFactory-v2.1.1-macos-arm64.zip`
 - 大小：63,499,139 字节

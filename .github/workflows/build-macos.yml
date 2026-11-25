@@ -1,0 +1,37 @@
+name: Build macOS packages
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            architecture: arm64
+          - runner: macos-15-intel
+            architecture: x86_64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install native Python, Tcl/Tk and FFmpeg
+        run: brew install python@3.13 python-tk@3.13 ffmpeg
+      - name: Prepare build environment
+        shell: bash
+        run: |
+          test "$(uname -m)" = "${{ matrix.architecture }}"
+          "$(brew --prefix python@3.13)/bin/python3.13" -m venv .venv-macos
+          .venv-macos/bin/python -m pip install -r requirements-macos-dev.txt
+          .venv-macos/bin/python -m unittest discover -s tests -p test_macos.py -v
+      - name: Build and smoke test application
+        run: .venv-macos/bin/python scripts/build.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PotatoFactory-macos-${{ matrix.architecture }}
+          path: |
+            releases/**/*.zip
+            releases/**/build-result.json
+          if-no-files-found: error
+          retention-days: 14

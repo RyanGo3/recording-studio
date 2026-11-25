@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import queue
 import struct
+import sys
 import threading
 import time
 from pathlib import Path
@@ -63,6 +64,23 @@ def resolve_sources(mode: str, microphone_id: str | None = None) -> list[tuple[s
     if mode not in AUDIO_MODES:
         raise ValueError("不支持的声音来源。")
     result = []
+    if sys.platform == "darwin":
+        if mode in {"system", "mixed"}:
+            devices = [device for device in sc.all_microphones()
+                       if device.name.casefold() == "blackhole 2ch"]
+            if len(devices) != 1:
+                raise RuntimeError(
+                    "系统录音需要 BlackHole 2ch。请安装后在“音频 MIDI 设置”中创建"
+                    "包含扬声器和 BlackHole 2ch 的多输出设备，并将其设为系统输出。"
+                    "详见 docs/MACOS.md；仅录麦克风可选择“仅外部声音”。")
+            result.append(("system", devices[0]))
+        if mode in {"microphone", "mixed"}:
+            source = sc.get_microphone(microphone_id) if microphone_id else sc.default_microphone()
+            if source is None or "blackhole" in source.name.casefold():
+                raise RuntimeError(
+                    "请将 macOS 默认输入设为实际麦克风，并在系统设置中允许麦克风访问。")
+            result.append(("microphone", source))
+        return result
     if mode in {"system", "mixed"}:
         speaker = sc.default_speaker()
         if speaker is None:

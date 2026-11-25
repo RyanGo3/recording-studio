@@ -1,4 +1,4 @@
-# 已验证的 Windows x64 / CPython 3.13 运行环境。
+# 已验证 Windows x64 / CPython 3.13；macOS 复用此依赖集，需原生构建和验收。
 soundcard==0.4.6
 numpy==2.5.4
 scipy==1.16.3

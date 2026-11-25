@@ -2,7 +2,8 @@
 
 ## 环境
 
-- Windows 10 / 11 x64；本工具依赖 WASAPI、Windows 原生光标和 FFmpeg `gdigrab`，不支持 macOS / Linux。
+- Windows 10 / 11 x64：使用 WASAPI、Windows 原生光标和 FFmpeg `gdigrab`。
+- macOS 实验版：使用 AVFoundation、CoreGraphics 和 BlackHole 2ch，需在 Mac 原生构建，尚未完成真机验收。见 [macOS 说明](MACOS.md)。Linux 不支持。
 - 已验证 CPython 3.13.9 x64，安装 Tcl/Tk。
 - 普通运行依赖见 `requirements.txt`；PyInstaller 及其构建依赖见 `requirements-dev.txt`，均固定版本。
 - Git 仅用于克隆和提交；运行 EXE 不需要 Git。

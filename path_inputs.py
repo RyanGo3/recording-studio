@@ -151,6 +151,8 @@ class FileQueue(tk.Frame):
         self.empty.bind("<Button-1>", lambda _e: choose() if self.enabled else None)
         self.empty.bind("<Return>", lambda _e: choose() if self.enabled else None)
         self.empty.bind("<Control-v>", lambda _e: self._paste())
+        if sys.platform == "darwin":
+            self.empty.bind("<Command-v>", lambda _e: self._paste())
         self.list_frame = tk.Frame(self.surface, bg=Theme.input_bg)
         self.file_list = tk.Listbox(
             self.list_frame, height=4, borderwidth=0, highlightthickness=0,
@@ -166,6 +168,8 @@ class FileQueue(tk.Frame):
         vertical.grid(row=0, column=1, sticky="ns", pady=8)
         self.file_list.configure(xscrollcommand=horizontal.set, yscrollcommand=vertical.set)
         self.file_list.bind("<Control-v>", lambda _e: self._paste())
+        if sys.platform == "darwin":
+            self.file_list.bind("<Command-v>", lambda _e: self._paste())
         footer = tk.Frame(self, bg=Theme.card)
         footer.pack(fill="x", pady=(8, 0))
         self.path_button = PillButton(footer, "输入路径", self.toggle_paths, variant="ghost", width=9)

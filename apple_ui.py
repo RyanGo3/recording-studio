@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
+import sys
 import tkinter as tk
 from tkinter import font as tkfont
 
@@ -34,14 +35,16 @@ class Theme:
 
 
 class Fonts:
-    ui = ("Microsoft YaHei UI", 10)
-    ui_bold = ("Microsoft YaHei UI", 10, "bold")
-    title = ("Microsoft YaHei UI", 22, "bold")
-    subtitle = ("Microsoft YaHei UI", 10)
-    section = ("Microsoft YaHei UI", 11, "bold")
-    timer = ("Segoe UI Light", 46)
-    mono = ("Segoe UI", 10)
-    small = ("Microsoft YaHei UI", 9)
+    family = "PingFang SC" if sys.platform == "darwin" else "Microsoft YaHei UI"
+    latin = "Helvetica Neue" if sys.platform == "darwin" else "Segoe UI"
+    ui = (family, 10)
+    ui_bold = (family, 10, "bold")
+    title = (family, 22, "bold")
+    subtitle = (family, 10)
+    section = (family, 11, "bold")
+    timer = (latin if sys.platform == "darwin" else "Segoe UI Light", 46)
+    mono = (latin, 10)
+    small = (family, 9)
 
 
 def studio_icon() -> Image.Image:
@@ -362,6 +365,8 @@ class RoundedEntry(tk.Frame):
         self._edit_menu.add_command(label="全选", command=lambda: self.entry.selection_range(0, "end"))
         self.entry.bind("<Button-3>", lambda event: self._edit_menu.tk_popup(event.x_root, event.y_root))
         self.entry.bind("<Control-a>", lambda _event: (self.entry.selection_range(0, "end"), "break")[-1])
+        if sys.platform == "darwin":
+            self.entry.bind("<Command-a>", lambda _event: (self.entry.selection_range(0, "end"), "break")[-1])
 
     def _paint(self, _event=None) -> None:
         width, height = max(2, self.winfo_width()), max(2, self.winfo_height())

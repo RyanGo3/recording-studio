@@ -57,7 +57,9 @@ def tool(name):
                 return str(candidate)
     found = shutil.which(name)
     if not found:
-        raise ProcessingError(f"缺少 {name}，请运行 scripts\\prepare-tools.ps1 或使用完整的程序文件夹。")
+        prepare = ("在 Mac 上安装 FFmpeg，或重新构建完整 .app"
+                   if sys.platform == "darwin" else "运行 scripts\\prepare-tools.ps1")
+        raise ProcessingError(f"缺少 {name}，请{prepare}，或使用完整的程序文件夹。")
     return found
 
 

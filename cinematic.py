@@ -7,6 +7,7 @@ import json
 import math
 import os
 import subprocess
+import sys
 import threading
 import time
 from collections import deque
@@ -51,6 +52,9 @@ class CursorCapture:
         self.thread: threading.Thread | None = None
 
     def start(self) -> None:
+        if sys.platform == "darwin":
+            from macos_capture import cursor_state
+            cursor_state()  # Surface native framework failures before starting a worker.
         self.started_at = time.monotonic()
         self.thread = threading.Thread(target=self._run, daemon=True)
         self.thread.start()
@@ -62,6 +66,9 @@ class CursorCapture:
         return self.samples
 
     def _run(self) -> None:
+        if sys.platform == "darwin":
+            self._run_macos()
+            return
         user32 = ctypes.WinDLL("user32", use_last_error=True)
         user32.LoadCursorW.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
         user32.LoadCursorW.restype = ctypes.c_void_p
@@ -88,6 +95,22 @@ class CursorCapture:
                     "kind": "text" if info.hCursor == text_cursor else "arrow",
                 })
                 last_buttons = buttons
+            self.stop_event.wait(1 / 120)
+
+    def _run_macos(self) -> None:
+        from macos_capture import cursor_state
+        x, y, width, height = self.region
+        last_buttons = [False, False]
+        while not self.stop_event.is_set():
+            px, py, buttons = cursor_state()
+            px, py = px - x, py - y
+            inside = 0 <= px < width and 0 <= py < height
+            self.samples.append({
+                "t": time.monotonic() - self.started_at,
+                "x": px, "y": py, "visible": inside, "kind": "arrow",
+                "click": inside and any(down and not old for down, old in zip(buttons, last_buttons)),
+            })
+            last_buttons = buttons
             self.stop_event.wait(1 / 120)
 
 

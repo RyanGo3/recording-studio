@@ -17,7 +17,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 SOURCES = ("app.py", "apple_ui.py", "audio_sources.py", "audio_processing.py",
            "recording_v2.py", "cinematic.py", "audio_softening.py", "softening_ui.py",
-           "media_conversion.py", "conversion_ui.py", "path_inputs.py")
+           "media_conversion.py", "conversion_ui.py", "path_inputs.py", "macos_capture.py")
 
 
 def sha256(path: Path) -> str:
@@ -26,6 +26,10 @@ def sha256(path: Path) -> str:
 
 
 def main() -> None:
+    if sys.platform == "darwin":
+        from build_macos import main as build_macos
+        build_macos()
+        return
     if sys.platform != "win32" or platform.machine().lower() not in {"amd64", "x86_64"}:
         raise SystemExit("请在 Windows x64 上构建。")
     ffmpeg = ROOT / "tools" / "ffmpeg.exe"

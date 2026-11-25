@@ -6,6 +6,7 @@ import queue
 import re
 import shutil
 import subprocess
+import sys
 import threading
 import time
 import uuid
@@ -108,13 +109,20 @@ class ScreenRecorder:
 
     def _start_part(self) -> None:
         x, y, width, height = self.region
+        if sys.platform == "darwin":
+            from macos_capture import capture_arguments
+            capture = capture_arguments(self.region, self.fps, not self.effects.enabled)
+        else:
+            capture = [
+                "-f", "gdigrab", "-framerate", str(self.fps),
+                "-offset_x", str(x), "-offset_y", str(y), "-video_size", f"{width}x{height}",
+                "-draw_mouse", "0" if self.effects.enabled else "1", "-i", "desktop",
+            ]
         path = self.session / f"video_{len(self.parts):04d}.mp4"
         log = (self.session / "capture.log").open("ab")
         try:
             self._ffmpeg = subprocess.Popen(
-                [str(self.ffmpeg_path), "-n", "-v", "error", "-f", "gdigrab", "-framerate", str(self.fps),
-                 "-offset_x", str(x), "-offset_y", str(y), "-video_size", f"{width}x{height}",
-                 "-draw_mouse", "0" if self.effects.enabled else "1", "-i", "desktop",
+                [str(self.ffmpeg_path), "-n", "-v", "error", *capture,
                  "-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
                  "-pix_fmt", "yuv420p", str(path)],
                 stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=log, **self.popen_kwargs())

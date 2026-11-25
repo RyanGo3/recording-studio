@@ -26,7 +26,7 @@ import pygame
 import soundcard as sc
 from mutagen.mp3 import MP3
 from audio_processing import cleanup_filter
-from audio_sources import PCMFile
+from audio_sources import PCMFile, resolve_sources
 from softening_ui import AudioSoftenerPage
 from conversion_ui import MediaConversionPage
 from path_inputs import (
@@ -85,21 +85,22 @@ def app_dir() -> Path:
 
 
 def find_ffmpeg() -> Path:
+    name = "ffmpeg.exe" if os.name == "nt" else "ffmpeg"
     candidates: list[Path] = [
-        app_dir() / "ffmpeg.exe",
-        app_dir() / "tools" / "ffmpeg.exe",
-        Path(sys.executable).resolve().parent / "ffmpeg.exe",
+        app_dir() / name,
+        app_dir() / "tools" / name,
+        Path(sys.executable).resolve().parent / name,
     ]
     meipass = getattr(sys, "_MEIPASS", None)
     if meipass:
-        candidates.append(Path(meipass) / "ffmpeg.exe")
+        candidates.append(Path(meipass) / name)
     which = shutil.which("ffmpeg")
     if which:
         candidates.append(Path(which))
     for path in candidates:
         if path.is_file():
             return path
-    raise FileNotFoundError("没有找到 ffmpeg.exe，录屏、视频分段、分离音频和声音柔化都需要它。")
+    raise FileNotFoundError(f"没有找到 {name}，请使用完整安装包，或安装 FFmpeg。")
 
 
 def format_time(seconds: float, show_milliseconds: bool = False) -> str:
@@ -147,7 +148,8 @@ def even_size(width: int, height: int) -> tuple[int, int]:
 
 def default_output_folder() -> Path:
     drive = Path("D:/")
-    base = drive if drive.exists() else Path.home() / "Videos"
+    base = (Path.home() / "Movies" if sys.platform == "darwin"
+            else drive if drive.exists() else Path.home() / "Videos")
     # Keep existing recordings discoverable; never move the user's files.
     legacy = base / "录制工坊"
     return legacy if legacy.is_dir() else base / APP_TITLE
@@ -201,6 +203,9 @@ class MONITORINFO(ctypes.Structure):
 
 
 def virtual_screen() -> tuple[int, int, int, int]:
+    if sys.platform == "darwin":
+        from macos_capture import main_display
+        return main_display()
     user32 = ctypes.windll.user32
     return (
         user32.GetSystemMetrics(76),
@@ -212,6 +217,9 @@ def virtual_screen() -> tuple[int, int, int, int]:
 
 def list_monitors() -> list[dict[str, int | bool]]:
     monitors: list[dict[str, int | bool]] = []
+    if sys.platform == "darwin":
+        x, y, width, height = virtual_screen()
+        return [{"x": x, "y": y, "w": width, "h": height, "primary": True}]
     if os.name != "nt":
         return [{"x": 0, "y": 0, "w": 1920, "h": 1080, "primary": True}]
 
@@ -311,6 +319,9 @@ class SystemAudioRecorder:
 
     @staticmethod
     def find_loopback_microphone() -> tuple[sc.Speaker, sc.Microphone]:
+        if sys.platform == "darwin":
+            microphone = resolve_sources("system")[0][1]
+            return microphone, microphone
         speaker = sc.default_speaker()
         if speaker is None:
             raise RuntimeError("没有找到默认播放设备。")
@@ -1038,7 +1049,7 @@ class PathPickerDialog:
             ("桌面", Path.home() / "Desktop"),
             ("下载", Path.home() / "Downloads"),
             ("文档", Path.home() / "Documents"),
-            ("视频", Path.home() / "Videos"),
+            ("视频", Path.home() / ("Movies" if sys.platform == "darwin" else "Videos")),
             ("音乐", Path.home() / "Music"),
         ]
         for label, path in places:
@@ -1066,6 +1077,8 @@ class PathPickerDialog:
         entry.grid(row=0, column=1, sticky="ew", ipady=7)
         entry.bind("<Return>", lambda _event: self.go_to_address())
         entry.bind("<Control-a>", lambda _e: (entry.selection_range(0, "end"), "break")[-1])
+        if sys.platform == "darwin":
+            entry.bind("<Command-a>", lambda _e: (entry.selection_range(0, "end"), "break")[-1])
         self.address_menu = tk.Menu(entry, tearoff=False)
         for label, event in (("剪切", "<<Cut>>"), ("复制", "<<Copy>>"), ("粘贴", "<<Paste>>")):
             self.address_menu.add_command(label=label, command=lambda event=event: entry.event_generate(event))
@@ -1394,6 +1407,8 @@ class RecorderApp:
         self._build_ui()
         self.file_drop = WindowsFileDrop(self.root, self._drop_paths)
         self.root.bind("<Control-v>", self._paste_files, add="+")
+        if sys.platform == "darwin":
+            self.root.bind("<Command-v>", self._paste_files, add="+")
         self._poll_events()
         self._update_timers()
         self._refresh_mode()
@@ -1750,7 +1765,8 @@ class RecorderApp:
         canvas = {"record": self.record_canvas, "edit": self.edit_canvas,
                   "soften": self.soften_canvas, "audio_convert": self.audio_convert_canvas,
                   "compress": self.compress_convert_canvas}[self.page_var.get()]
-        canvas.yview_scroll(-int(event.delta / 120), "units")
+        units = -int(event.delta) if sys.platform == "darwin" else -int(event.delta / 120)
+        canvas.yview_scroll(units, "units")
 
     def _set_screen_options(self, enabled: bool) -> None:
         self.audio_sources.set_enabled(enabled)
@@ -1767,6 +1783,12 @@ class RecorderApp:
             "mixed": "系统声音 + 外部声音 · 同时录入默认播放设备与默认麦克风",
             "microphone": "仅外部声音 · 使用 Windows 默认麦克风 / 输入设备",
         }
+        if sys.platform == "darwin":
+            hints = {
+                "system": "系统声音 · 需要 BlackHole 2ch 及多输出设备，见 macOS 使用说明",
+                "mixed": "BlackHole 系统声音 + macOS 默认麦克风",
+                "microphone": "仅外部声音 · macOS 默认麦克风，需要麦克风权限",
+            }
         self.device_var.set(hints[mode])
 
     def choose_folder(self) -> None:
@@ -1847,7 +1869,10 @@ class RecorderApp:
     def _open_folder(self, folder: Path) -> None:
         try:
             folder.mkdir(parents=True, exist_ok=True)
-            os.startfile(str(folder.resolve()))
+            if sys.platform == "darwin":
+                subprocess.Popen(["/usr/bin/open", str(folder.resolve())])
+            else:
+                os.startfile(str(folder.resolve()))
         except OSError as error:
             messagebox.showerror(APP_TITLE, f"无法打开文件夹：\n{error}")
 
@@ -2220,7 +2245,10 @@ class RecorderApp:
                 raise ValueError("保存位置不是文件夹。")
             output_path = available_path(folder, filename)
             ffmpeg = find_ffmpeg() if mode != "audio" or self.noise_reduction_var.get() else None
-        except (ValueError, OSError) as error:
+            if sys.platform == "darwin" and mode != "audio":
+                from macos_capture import require_screen_permission
+                require_screen_permission()
+        except (ValueError, OSError, RuntimeError) as error:
             messagebox.showerror(APP_TITLE, str(error))
             return
         if mode == "region" and self.region is None:
@@ -2536,6 +2564,23 @@ class RecorderApp:
 def main() -> None:
     _enable_dpi_awareness()
     root = tk.Tk()
+    if "--smoke-test" in sys.argv:
+        root.withdraw()
+        ui = RecorderApp(root)
+        try:
+            for name in ("ffmpeg", "ffprobe"):
+                from audio_softening import tool
+                subprocess.run([tool(name), "-version"], capture_output=True,
+                               check=True, timeout=30, **_popen_kwargs())
+            subprocess.run([
+                str(find_ffmpeg()), "-v", "error", "-f", "lavfi", "-i",
+                "testsrc2=size=64x64:rate=10", "-t", "0.1",
+                "-c:v", "libx264", "-f", "null", "-",
+            ], capture_output=True, check=True, timeout=30, **_popen_kwargs())
+            root.update_idletasks()
+        finally:
+            ui.on_close()
+        return
     RecorderApp(root)
     root.mainloop()
 

@@ -53,7 +53,7 @@ $env:STUDIO_DESKTOP_TESTS = "1"
 ```text
 builds/<时间_编号>/             # PyInstaller 工作目录与 spec
 releases/<时间_编号>/
-  PotatoFactory-v2.1.0-windows-x64/
+  PotatoFactory-v2.1.1-windows-x64/
     PotatoFactory.exe
     ffmpeg.exe
     ffprobe.exe
@@ -63,7 +63,7 @@ releases/<时间_编号>/
     THIRD_PARTY_NOTICES.md
     build-info.json
     SHA256SUMS.txt
-  PotatoFactory-v2.1.0-windows-x64.zip
+  PotatoFactory-v2.1.1-windows-x64.zip
 ```
 
 `build-info.json` 记录产品名、作者、Python、Windows、依赖版本、Git 提交（若存在）、构建时间、FFmpeg 版本与散列，以及 11 个运行源码的 SHA-256。构建完成不代表已完成真实录音验证，请结合 `docs/VALIDATION.md` 查看验收范围。

@@ -273,7 +273,7 @@ class AppleUITests(unittest.TestCase):
                 self.assertAlmostEqual(bottom, 1, places=2)
             else:
                 self.assertLessEqual(bbox[3], self.ui.edit_canvas.winfo_height() + 20)
-        self.assertEqual(self.ui.breadcrumb_var.get(), "工作空间  /  剪辑与导出")
+        self.assertEqual(self.ui.breadcrumb_var.get(), "工作空间  /  裁剪与导出")
         self.assertTrue(self.ui.nav_edit.active)
         self.assertFalse(self.ui.nav_record.active)
 

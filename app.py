@@ -1388,7 +1388,7 @@ class RecorderApp:
         self.zoom_var = tk.StringVar(value="1.65")
         self.close_after_save = False
         self.format_var = tk.StringVar(value="MP3 · 128 kbps")
-        self.breadcrumb_var = tk.StringVar(value="工作空间  /  录制")
+        self.breadcrumb_var = tk.StringVar(value="工作空间  /  录屏与录音")
         self.page_var = tk.StringVar(value="record")
 
         self._build_ui()
@@ -1425,9 +1425,9 @@ class RecorderApp:
         sidebar.pack_propagate(False)
         tk.Label(sidebar, text="工作空间", bg=Theme.sidebar, fg=Theme.muted,
                  font=Fonts.small).pack(anchor="w", padx=24, pady=(28, 12))
-        self.nav_record = NavButton(sidebar, "录制", lambda: self._show_page("record"))
+        self.nav_record = NavButton(sidebar, "录屏与录音", lambda: self._show_page("record"))
         self.nav_record.pack(fill="x", padx=12)
-        self.nav_edit = NavButton(sidebar, "剪辑与导出", lambda: self._show_page("edit"), icon="edit")
+        self.nav_edit = NavButton(sidebar, "裁剪与导出", lambda: self._show_page("edit"), icon="edit")
         self.nav_edit.pack(fill="x", padx=12, pady=(6, 0))
         self.nav_soften = NavButton(sidebar, "声音柔化", lambda: self._show_page("soften"), icon="audio")
         self.nav_soften.pack(fill="x", padx=12, pady=(6, 0))
@@ -1682,7 +1682,7 @@ class RecorderApp:
         if page != "edit":
             self.stop_playback()
         self.page_var.set(page)
-        titles = {"record": "录制", "edit": "剪辑与导出", "soften": "声音柔化",
+        titles = {"record": "录屏与录音", "edit": "裁剪与导出", "soften": "声音柔化",
                   "audio_convert": "视频转音频", "compress": "视频压缩"}
         self.breadcrumb_var.set("工作空间  /  " + titles[page])
         pages = {"record": self.record_page, "edit": self.edit_page, "soften": self.soften_page,

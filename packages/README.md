@@ -4,6 +4,7 @@
 
 | 版本 | 平台 | 构建 | 安装包 | 记录 |
 | --- | --- | --- | --- | --- |
+| 2.1.1 | Windows x64 | `20261125_145337_d13224f6` | [下载](https://github.com/RyanGo3/recording-studio/releases/download/v2.1.1/PotatoFactory-v2.1.1-windows-x64.zip) | [详情与校验](v2.1.1/20261125_145337_d13224f6/) |
 | 2.1.0 | Windows x64 | `20261124_175605_99515761` | [下载](https://github.com/RyanGo3/recording-studio/releases/download/v2.1.0/PotatoFactory-v2.1.0-windows-x64.zip) | [详情与校验](v2.1.0/20261124_175605_99515761/) |
 
 ## 目录约定

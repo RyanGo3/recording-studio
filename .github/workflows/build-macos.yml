@@ -16,13 +16,17 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v6
-      - name: Install native Python, Tcl/Tk and FFmpeg
-        run: brew install python@3.13 python-tk@3.13 ffmpeg
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Install FFmpeg
+        run: brew install ffmpeg
       - name: Prepare build environment
         shell: bash
         run: |
           test "$(uname -m)" = "${{ matrix.architecture }}"
-          "$(brew --prefix python@3.13)/bin/python3.13" -m venv .venv-macos
+          python -c "import tkinter; print('Tcl/Tk', tkinter.TkVersion)"
+          python -m venv .venv-macos
           .venv-macos/bin/python -m pip install -r requirements-macos-dev.txt
           .venv-macos/bin/python -m unittest discover -s tests -p test_macos.py -v
       - name: Build and smoke test application

@@ -1,4 +1,4 @@
-"""Light, macOS-inspired Tk widgets. All artwork is drawn locally at runtime."""
+"""Shared warm neutral desktop theme; artwork is drawn locally at runtime."""
 from __future__ import annotations
 
 from functools import lru_cache
@@ -9,23 +9,24 @@ from PIL import Image, ImageDraw, ImageFilter, ImageTk
 
 
 class Theme:
-    bg = "#f5f5f7"
-    sidebar = "#ededf1"
-    header = "#fafafc"
+    bg = "#f5f4f0"
+    sidebar = "#eeede7"
+    header = "#fafaf7"
     card = "#ffffff"
-    card_alt = "#ededf0"
-    input_bg = "#f5f5f7"
-    border = "#e3e3e8"
-    border_hover = "#d6d6de"
-    text = "#1d1d1f"
-    text_dim = "#56565d"
-    muted = "#787880"
-    accent = "#007aff"
-    accent_soft = "#deecff"
+    card_alt = "#f0efe9"
+    input_bg = "#f8f8f5"
+    border = "#e4e3db"
+    border_hover = "#d2d1c7"
+    text = "#272c27"
+    text_dim = "#555e55"
+    muted = "#7a8077"
+    accent = "#49654a"
+    accent_hover = "#375039"
+    accent_soft = "#e4eddf"
     record = "#ff3b30"
     record_hover = "#e52f26"
-    success = "#248a3d"
-    success_soft = "#e5f4e8"
+    success = "#3e744c"
+    success_soft = "#e8f2e6"
     warning = "#a86b00"
     warning_soft = "#fff2d5"
     error_soft = "#ffebe9"
@@ -50,15 +51,15 @@ def studio_icon() -> Image.Image:
     draw = ImageDraw.Draw(gradient)
     for y in range(size):
         value = y / (size - 1)
-        draw.line((0, y, size, y), fill=(round(44 - 40 * value), round(162 - 51 * value), 255, 255))
+        draw.line((0, y, size, y), fill=(round(100-29*value), round(128-27*value), round(83-14*value), 255))
     mask = Image.new("L", (size, size))
     ImageDraw.Draw(mask).rounded_rectangle((4, 4, 251, 251), radius=56, fill=255)
     image.paste(gradient, (0, 0), mask)
     draw = ImageDraw.Draw(image)
-    draw.rounded_rectangle((57, 77, 199, 182), radius=22, outline="white", width=12)
-    draw.rounded_rectangle((99, 61, 157, 89), radius=9, fill="white")
-    draw.ellipse((101, 104, 155, 158), outline="white", width=11)
-    draw.ellipse((172, 94, 181, 103), fill="white")
+    draw.rounded_rectangle((52, 61, 204, 194), radius=59, fill="#ecd4a5")
+    draw.ellipse((80, 87, 91, 98), fill="#c49b66")
+    draw.ellipse((167, 143, 176, 152), fill="#c49b66")
+    draw.polygon(((112, 104), (112, 157), (158, 130)), fill="#49654a")
     return image
 
 
@@ -95,7 +96,7 @@ class Card(tk.Frame):
         if event.width < 2 or event.height < 2:
             return
         image = rounded_image(event.width, event.height, Theme.card, self._parent_bg,
-                              radius=18, border="#ebebf0", shadow=True)
+                              radius=14, border=Theme.border, shadow=True)
         self._photo = ImageTk.PhotoImage(image, master=self)
         self._surface.configure(image=self._photo)
         self._surface.lower()
@@ -137,15 +138,15 @@ class PillButton(tk.Frame):
     def _apply(self, hover: bool = False) -> None:
         self._hover = hover
         palettes = {
-            "primary": (Theme.accent, "#0067da", "white"),
+            "primary": (Theme.accent, Theme.accent_hover, "white"),
             "danger": (Theme.record, Theme.record_hover, "white"),
-            "ghost": ("#f0f0f3", "#e5e5eb", Theme.text_dim),
+            "ghost": (Theme.card_alt, Theme.border, Theme.text_dim),
             "success": (Theme.success_soft, "#d7eddd", Theme.success),
             "muted": (Theme.card_alt, Theme.border_hover, Theme.muted),
         }
         idle, hovered, foreground = palettes.get(self.variant, palettes["primary"])
-        fill = (hovered if hover else idle) if self._enabled else "#f4f4f6"
-        foreground = foreground if self._enabled else "#a8a8b0"
+        fill = (hovered if hover else idle) if self._enabled else Theme.input_bg
+        foreground = foreground if self._enabled else "#a7aaa1"
         focused = self._enabled and self.label.focus_get() == self.label
         image = rounded_image(self._width, 36, fill, self.cget("bg"), radius=10,
                               border=Theme.accent if focused else None)
@@ -254,16 +255,30 @@ class NavButton(tk.Frame):
         self.active = active
         width = max(176, self.label.winfo_width())
         foreground = Theme.accent if active else Theme.text_dim
-        fill = "#dce7f8" if active else Theme.sidebar
+        fill = Theme.accent_soft if active else Theme.sidebar
         focus = self.label.focus_get() == self.label
         self._photo = ImageTk.PhotoImage(
             rounded_image(width, 42, fill, Theme.sidebar, radius=10,
                           border=Theme.accent if focus else None), master=self)
         self.label.delete("all")
         self.label.create_image(0, 0, image=self._photo, anchor="nw")
+        if active:
+            self.label.create_line(5, 14, 5, 28, fill=Theme.accent, width=3)
         if self.icon == "record":
             self.label.create_oval(16, 12, 34, 30, outline=foreground, width=1.5)
             self.label.create_oval(21, 17, 29, 25, fill=foreground, outline="")
+        elif self.icon == "convert":
+            self.label.create_line(16, 16, 34, 16, fill=foreground, width=2, arrow="last")
+            self.label.create_line(34, 26, 16, 26, fill=foreground, width=2, arrow="last")
+        elif self.icon == "compress":
+            self.label.create_rectangle(15, 11, 35, 31, outline=foreground, width=1.5)
+            self.label.create_line(17, 13, 23, 19, fill=foreground, width=1.5, arrow="last")
+            self.label.create_line(33, 29, 27, 23, fill=foreground, width=1.5, arrow="last")
+        elif self.icon == "audio":
+            for offset, height in ((0, 8), (5, 17), (10, 24), (15, 13)):
+                x = 17 + offset
+                self.label.create_line(x, 21 - height / 2, x, 21 + height / 2,
+                                       fill=foreground, width=2)
         else:
             self.label.create_oval(16, 23, 23, 30, outline=foreground, width=1.5)
             self.label.create_oval(27, 23, 34, 30, outline=foreground, width=1.5)
@@ -339,10 +354,18 @@ class RoundedEntry(tk.Frame):
         self.bind("<Configure>", self._paint, add="+")
         self.entry.bind("<FocusIn>", self._paint)
         self.entry.bind("<FocusOut>", self._paint)
+        self._edit_menu = tk.Menu(self.entry, tearoff=False)
+        for label, virtual in (("剪切", "<<Cut>>"), ("复制", "<<Copy>>"), ("粘贴", "<<Paste>>")):
+            self._edit_menu.add_command(label=label,
+                                        command=lambda event=virtual: self.entry.event_generate(event))
+        self._edit_menu.add_separator()
+        self._edit_menu.add_command(label="全选", command=lambda: self.entry.selection_range(0, "end"))
+        self.entry.bind("<Button-3>", lambda event: self._edit_menu.tk_popup(event.x_root, event.y_root))
+        self.entry.bind("<Control-a>", lambda _event: (self.entry.selection_range(0, "end"), "break")[-1])
 
     def _paint(self, _event=None) -> None:
         width, height = max(2, self.winfo_width()), max(2, self.winfo_height())
-        border = Theme.accent if self.focus_get() == self.entry else "#ebebef"
+        border = Theme.accent if self.focus_get() == self.entry else Theme.border
         self._photo = ImageTk.PhotoImage(
             rounded_image(width, height, Theme.input_bg, super().cget("bg"), radius=9, border=border), master=self)
         self._surface.configure(image=self._photo)
@@ -384,6 +407,90 @@ class Badge(tk.Canvas):
         self.delete("all")
         self.create_image(0, 0, image=self._photo, anchor="nw")
         self.create_text(39, 14, text=self.text, fill=self.foreground, font=Fonts.small)
+
+
+class ValueSlider(tk.Frame):
+    """Keyboard accessible slider with a quiet track and a readable value."""
+    def __init__(self, master, variable, minimum=15, maximum=100):
+        super().__init__(master, bg=master.cget("bg"))
+        self.variable, self.minimum, self.maximum = variable, minimum, maximum
+        self.enabled = True
+        self.value_label = tk.Label(self, textvariable=variable, width=3, bg=self.cget("bg"),
+                                    fg=Theme.accent, font=Fonts.ui_bold)
+        self.value_label.pack(side="right", padx=(12, 0))
+        self.track = tk.Canvas(self, height=32, width=140, bg=self.cget("bg"),
+                                highlightthickness=0, takefocus=True, cursor="hand2")
+        self.track.pack(side="left", fill="x", expand=True)
+        self.track.bind("<Configure>", self._paint)
+        self.track.bind("<Button-1>", self._seek)
+        self.track.bind("<B1-Motion>", self._seek)
+        for key, step in (("Left", -1), ("Right", 1)):
+            self.track.bind(f"<{key}>", lambda _e, delta=step: self._key(delta))
+        self.track.bind("<Home>", lambda _e: self._set(self.minimum))
+        self.track.bind("<End>", lambda _e: self._set(self.maximum))
+        self.track.bind("<FocusIn>", self._paint)
+        self.track.bind("<FocusOut>", self._paint)
+        self._trace = variable.trace_add("write", self._paint)
+
+    def _set(self, value):
+        if self.enabled:
+            self.variable.set(round(max(self.minimum, min(self.maximum, value))))
+        return "break"
+
+    def _key(self, delta):
+        return self._set(self.variable.get()+delta)
+
+    def _seek(self, event):
+        if self.enabled:
+            self.track.focus_set()
+            self._set(self.minimum+(event.x-10)/max(1, self.track.winfo_width()-20)*(self.maximum-self.minimum))
+        return "break"
+
+    def _paint(self, *_args):
+        self.track.delete("all")
+        width = max(24, self.track.winfo_width())
+        x = 10+(width-20)*(self.variable.get()-self.minimum)/(self.maximum-self.minimum)
+        color = Theme.accent if self.enabled else Theme.muted
+        self.track.create_line(10, 16, width-10, 16, fill=Theme.border, width=4, capstyle="round")
+        self.track.create_line(10, 16, x, 16, fill=color, width=4, capstyle="round")
+        if self.track.focus_get() == self.track:
+            self.track.create_oval(x-11, 5, x+11, 27, outline=Theme.accent_soft, width=3)
+        self.track.create_oval(x-7, 9, x+7, 23, fill=Theme.card, outline=color, width=2)
+
+    def configure(self, cnf=None, **kwargs):
+        if "state" in kwargs:
+            self.enabled = kwargs.pop("state") != "disabled"
+            self.track.configure(takefocus=self.enabled, cursor="hand2" if self.enabled else "arrow")
+            self.value_label.configure(fg=Theme.accent if self.enabled else Theme.muted)
+            self._paint()
+        return super().configure(cnf, **kwargs)
+
+    config = configure
+
+    def destroy(self):
+        self.variable.trace_remove("write", self._trace)
+        super().destroy()
+
+
+class SlimProgressbar(tk.Canvas):
+    def __init__(self, master, variable):
+        super().__init__(master, height=6, highlightthickness=0, bg=master.cget("bg"))
+        self.variable = variable
+        self._trace = variable.trace_add("write", self._paint)
+        self.bind("<Configure>", self._paint)
+
+    def _paint(self, *_args):
+        width = max(6, self.winfo_width())
+        value = max(0., min(100., self.variable.get()))
+        self.delete("all")
+        self.create_line(3, 3, width-3, 3, width=6, fill=Theme.border, capstyle="round")
+        if value > 0:
+            self.create_line(3, 3, 3+(width-6)*value/100, 3, width=6,
+                             fill=Theme.accent, capstyle="round")
+
+    def destroy(self):
+        self.variable.trace_remove("write", self._trace)
+        super().destroy()
 
 
 class PlaybackTimeline(tk.Canvas):

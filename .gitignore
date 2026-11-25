@@ -8,7 +8,10 @@ tools/*.download
 wheelhouse/
 builds/
 releases/
-packages/
+packages/**/*.zip
+packages/**/*.7z
+packages/**/*.exe
+packages/**/*.msi
 test-artifacts/
 *.spec
 *.log

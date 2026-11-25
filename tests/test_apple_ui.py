@@ -9,7 +9,7 @@ import uuid
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from PIL import Image, ImageTk
+from PIL import Image, ImageColor, ImageTk
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -237,9 +237,27 @@ class AppleUITests(unittest.TestCase):
                 self.assertEqual(widget._surface.winfo_width(), widget.winfo_width())
                 self.assertEqual(widget._surface.winfo_height(), widget.winfo_height())
                 photo = ImageTk.getimage(widget._photo).convert("RGB")
-                self.assertEqual(photo.getpixel((0, 0)), (245, 245, 247))
+                self.assertEqual(photo.getpixel((0, 0)), ImageColor.getrgb(Theme.bg))
             stack.extend(widget.winfo_children())
         self.assertEqual(len(cards), 3)
+
+    def test_softening_slider_pointer_keyboard_bounds_and_busy_lock(self):
+        self.ui._show_page("soften")
+        self.root.update()
+        page = self.ui.soften_page
+        slider = page.strength_control
+        slider._seek(SimpleNamespace(x=-100))
+        self.assertEqual(page.strength.get(), 15)
+        slider._seek(SimpleNamespace(x=slider.track.winfo_width()+100))
+        self.assertEqual(page.strength.get(), 100)
+        slider._key(-1)
+        self.assertEqual(page.strength.get(), 99)
+        self.assertTrue(slider.track.bind("<Right>"))
+        page._set_running(True)
+        slider._seek(SimpleNamespace(x=0))
+        slider._key(-1)
+        self.assertEqual(page.strength.get(), 99)
+        page._set_running(False)
 
     def test_editor_controls_reachable_and_breadcrumb_tracks_page(self):
         self.ui._show_page("edit")

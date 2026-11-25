@@ -1,6 +1,7 @@
 # 已验证的 Windows x64 / CPython 3.13 运行环境。
 soundcard==0.4.6
 numpy==2.5.4
+scipy==1.16.3
 lameenc==1.8.4
 pygame==2.6.1
 mutagen==1.48.1

@@ -1,0 +1,32 @@
+{
+  "app_name": "土豆工厂",
+  "author": "大土豆|Ryan",
+  "version": "2.1.0",
+  "platform": "windows-x64",
+  "build_id": "20261124_175605_99515761",
+  "built_at_utc": "2026-11-24T09:58:31.070907+00:00",
+  "source_base_commit": "e764b01b554b337bb1b0619fee75d5439641c658",
+  "source_sha256": {
+    "app.py": "a350a9efbc6815d7f8804d3a1d00b5b06ad496542ce994a443a4d8738726816e",
+    "apple_ui.py": "8c9c754d64a6066d2c96429e07cd9e8893e2b8aaab493b1c0cf36bba563a320e",
+    "audio_sources.py": "a3218ffe8d8b096cf38bb2c667e00546626553606b4437c73624305f5987dc02",
+    "audio_processing.py": "b0e7141252930c18ca8a5358e8bcd18ba3f535371d07733df771246ee53d4f8a",
+    "recording_v2.py": "883deeeda1a4627d753be33f01e7c0ff2d04fe4f5ac3c096d2106751e08d5327",
+    "cinematic.py": "5e17ed6a34854e6f0b582084c459f57eae7b3e68c6a6a53aa631418276571e68",
+    "audio_softening.py": "074ef2df56d56cd15e43974be6a5bfa48b7f26776029c0f76b011dc80c7def3e",
+    "softening_ui.py": "0743386be1caef5f4897827a651a5cb84ef52295f81bd8d4d25f9143a5380d05",
+    "media_conversion.py": "cf478d45e40c4475370daa3aba6cceb5fc78b6538a59b7b4e0370c73db088d49",
+    "conversion_ui.py": "3723d3b92ac52f30e3adb8dc31beb737d259a55311f3cfd3a778e63257af2724",
+    "path_inputs.py": "63130be0cb55fe9560b89fc0b7cde7e806701cdf3a423ce5e50b2c72f35f14b2"
+  },
+  "release_tag": "v2.1.0",
+  "release_url": "https://github.com/RyanGo3/recording-studio/releases/tag/v2.1.0",
+  "assets": [
+    {
+      "name": "PotatoFactory-v2.1.0-windows-x64.zip",
+      "bytes": 146455226,
+      "sha256": "f23213f8d6cff18c61c3483366c6dbcce258cc592abdc0d162175420daa97a34",
+      "download_url": "https://github.com/RyanGo3/recording-studio/releases/download/v2.1.0/PotatoFactory-v2.1.0-windows-x64.zip"
+    }
+  ]
+}

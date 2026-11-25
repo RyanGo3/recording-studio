@@ -20,7 +20,7 @@ ZIP SHA-256: db580001caa24ac104c8cb856cd113a87b0a443f7bdf47d8c12b1d740584a2ec
 EXE SHA-256: 1326dde4c84ff1f96fe6b8916c5bed29e163e9b5dccf995f6f3db069d143ec5e
 ```
 
-`tools/ffmpeg-provenance.json` 记录工具来源和散列。免安装包中的 `build-info.json` 记录实际采用的 FFmpeg 版本和散列。只随包提供本工具用到的 `ffmpeg.exe`，不附带 `ffplay.exe` 或 `ffprobe.exe`。
+`tools/ffmpeg-provenance.json` 记录工具来源和散列。免安装包中的 `build-info.json` 记录实际采用的 FFmpeg 版本和散列。随包提供 `ffmpeg.exe` 和声音柔化所需的 `ffprobe.exe`，不附带 `ffplay.exe`。
 
 ## Python 运行组件
 
@@ -30,6 +30,7 @@ EXE SHA-256: 1326dde4c84ff1f96fe6b8916c5bed29e163e9b5dccf995f6f3db069d143ec5e
 | --- | --- | --- | --- |
 | soundcard | 0.4.6 | BSD 3-Clause | https://github.com/bastibe/SoundCard |
 | numpy | 2.5.4 | BSD-3-Clause 及其附带组件许可 | https://github.com/numpy/numpy |
+| scipy | 1.16.3 | BSD-3-Clause 及其附带组件许可，见 `licenses/scipy/` | https://github.com/scipy/scipy |
 | lameenc | 1.8.4 | LGPL-3.0-or-later，含 LAME 编码器 | https://github.com/chrisstaite/lameenc |
 | pygame | 2.6.1 | LGPL；底层 SDL 等组件另见其原始声明 | https://github.com/pygame/pygame/tree/2.6.1 |
 | mutagen | 1.48.1 | GPL-2.0-or-later | https://github.com/quodlibet/mutagen |

@@ -27,9 +27,16 @@ import soundcard as sc
 from mutagen.mp3 import MP3
 from audio_processing import cleanup_filter
 from audio_sources import PCMFile
+from softening_ui import AudioSoftenerPage
+from conversion_ui import MediaConversionPage
+from path_inputs import (
+    WindowsFileDrop, PathInput, collect_files, parse_paths, single_path, clipboard_paths,
+)
 
 
-APP_TITLE = "录制工坊 2 · Studio"
+APP_TITLE = "土豆工厂"
+APP_AUTHOR = "大土豆|Ryan"
+EDITOR_SUFFIXES = {".mp3", ".mp4", ".mov", ".mkv", ".m4a"}
 SAMPLE_RATE = 48_000
 CHANNELS = 2
 BLOCK_SIZE = 4_800
@@ -92,7 +99,7 @@ def find_ffmpeg() -> Path:
     for path in candidates:
         if path.is_file():
             return path
-    raise FileNotFoundError("没有找到 ffmpeg.exe，录屏、视频分段和分离音频都需要它。")
+    raise FileNotFoundError("没有找到 ffmpeg.exe，录屏、视频分段、分离音频和声音柔化都需要它。")
 
 
 def format_time(seconds: float, show_milliseconds: bool = False) -> str:
@@ -140,9 +147,10 @@ def even_size(width: int, height: int) -> tuple[int, int]:
 
 def default_output_folder() -> Path:
     drive = Path("D:/")
-    if drive.exists():
-        return drive / "录制工坊"
-    return Path.home() / "Videos" / "录制工坊"
+    base = drive if drive.exists() else Path.home() / "Videos"
+    # Keep existing recordings discoverable; never move the user's files.
+    legacy = base / "录制工坊"
+    return legacy if legacy.is_dir() else base / APP_TITLE
 
 
 def clamp_region(region: tuple[int, int, int, int]) -> tuple[int, int, int, int]:
@@ -983,10 +991,14 @@ class PathPickerDialog:
         initial_dir: Path,
         on_select: Callable[[Path], None],
         select_mode: str = "folder",
+        suffixes=None,
+        multiple: bool = False,
     ) -> None:
         self.parent = parent
         self.on_select = on_select
         self.select_mode = select_mode
+        self.suffixes = suffixes
+        self.multiple = multiple
         self.current_dir = self._nearest_existing(initial_dir)
         self.items: list[tuple[Path, bool]] = []
 
@@ -1002,8 +1014,10 @@ class PathPickerDialog:
         self.address_var = tk.StringVar(value=str(self.current_dir))
         self.selection_var = tk.StringVar(value="")
         self._build_ui()
+        self.address_var.trace_add("write", lambda *_: self.confirm_button.set_enabled(True))
         self._load_directory(self.current_dir)
-        self.window.after(50, self.window.focus_force)
+        self.drop = WindowsFileDrop(self.window, self._drop_paths)
+        self._focus_job = self.window.after(50, self.window.focus_force)
 
     def _build_ui(self) -> None:
         frame = tk.Frame(self.window, bg=Theme.bg, padx=18, pady=16)
@@ -1037,7 +1051,7 @@ class PathPickerDialog:
         address.grid(row=1, column=0, sticky="ew", pady=(0, 10))
         address.columnconfigure(1, weight=1)
         PillButton(address, "上一级", self.go_up, variant="ghost", width=8).grid(row=0, column=0, padx=(0, 8))
-        entry = tk.Entry(
+        self.address_entry = entry = tk.Entry(
             address,
             textvariable=self.address_var,
             bg=Theme.input_bg,
@@ -1051,15 +1065,23 @@ class PathPickerDialog:
         )
         entry.grid(row=0, column=1, sticky="ew", ipady=7)
         entry.bind("<Return>", lambda _event: self.go_to_address())
+        entry.bind("<Control-a>", lambda _e: (entry.selection_range(0, "end"), "break")[-1])
+        self.address_menu = tk.Menu(entry, tearoff=False)
+        for label, event in (("剪切", "<<Cut>>"), ("复制", "<<Copy>>"), ("粘贴", "<<Paste>>")):
+            self.address_menu.add_command(label=label, command=lambda event=event: entry.event_generate(event))
+        self.address_menu.add_command(label="全选", command=lambda: entry.selection_range(0, "end"))
+        entry.bind("<Button-3>", lambda event: self.address_menu.tk_popup(event.x_root, event.y_root))
         PillButton(address, "转到", self.go_to_address, variant="ghost", width=6).grid(
             row=0, column=2, padx=(8, 0)
         )
 
         hint = {
-            "folder": "双击进入文件夹，确认后使用当前目录",
-            "audio": "双击文件夹进入，选择一个 MP3 文件",
-            "media": "双击文件夹进入，选择 MP3 或 MP4 文件",
+            "folder": "可粘贴完整目录后直接确认，或把目录拖入此窗口。",
+            "audio": "可粘贴完整文件路径，或拖入 MP3 文件。",
+            "media": "地址栏可粘贴完整路径并回车；也可直接拖入文件。",
         }[self.select_mode]
+        if self.multiple:
+            hint = "Ctrl / Shift 多选；粘贴路径后回车定位；拖入文件或目录可直接添加（仅本层）。"
         tk.Label(frame, text=hint, bg=Theme.bg, fg=Theme.muted, font=Fonts.small).grid(
             row=2, column=0, sticky="w"
         )
@@ -1078,6 +1100,7 @@ class PathPickerDialog:
             selectforeground=Theme.text,
             font=Fonts.ui,
             activestyle="none",
+            selectmode="extended" if self.multiple else "browse",
         )
         self.listbox.grid(row=0, column=0, sticky="nsew", padx=6, pady=6)
         self.listbox.bind("<<ListboxSelect>>", self._selection_changed)
@@ -1101,6 +1124,9 @@ class PathPickerDialog:
         actions.grid(row=5, column=0, sticky="ew")
         if self.select_mode == "folder":
             PillButton(actions, "新建文件夹", self.create_folder, variant="ghost", width=10).pack(side="left")
+        elif self.multiple:
+            PillButton(actions, "添加当前目录", lambda: self._finish([self.current_dir]),
+                       variant="ghost", width=13).pack(side="left")
         PillButton(actions, "取消", self.close, variant="ghost", width=8).pack(side="right")
         confirm_text = "使用此文件夹" if self.select_mode == "folder" else "打开文件"
         self.confirm_button = PillButton(
@@ -1146,10 +1172,12 @@ class PathPickerDialog:
 
     def _accepted_file(self, name: str) -> bool:
         lower = name.lower()
+        if self.suffixes is not None:
+            return Path(name).suffix.lower() in self.suffixes
         if self.select_mode == "audio":
             return lower.endswith(".mp3")
         if self.select_mode == "media":
-            return lower.endswith((".mp3", ".mp4", ".m4a", ".mov", ".mkv"))
+            return Path(name).suffix.lower() in EDITOR_SUFFIXES
         return False
 
     def _load_directory(self, path: Path) -> None:
@@ -1199,7 +1227,8 @@ class PathPickerDialog:
         path, is_folder = item
         self.selection_var.set(str(path))
         if self.select_mode != "folder":
-            self.confirm_button.set_enabled(not is_folder)
+            self.confirm_button.set_enabled(
+                any(not self.items[i][1] for i in self.listbox.curselection()))
 
     def _open_selected(self, _event: tk.Event) -> None:
         item = self._selected_item()
@@ -1215,11 +1244,30 @@ class PathPickerDialog:
         self._load_directory(self.current_dir.parent)
 
     def go_to_address(self) -> None:
-        path = Path(self.address_var.get().strip()).expanduser()
+        try:
+            path = single_path(self.address_var.get(), self.current_dir)
+        except (ValueError, OSError) as error:
+            self.selection_var.set(str(error))
+            return
         if path.is_dir():
             self._load_directory(path)
+        elif path.is_file() and self.select_mode != "folder" and self._accepted_file(path.name):
+            self._load_directory(path.parent)
+            index = next(i for i, item in enumerate(self.items) if item[0] == path)
+            self.listbox.selection_set(index)
+            self.listbox.see(index)
+            self._selection_changed(None)
         else:
-            messagebox.showwarning(APP_TITLE, "这个文件夹不存在。", parent=self.window)
+            self.selection_var.set("路径不存在，或此入口不支持该文件格式。")
+
+    def _drop_paths(self, paths, _target=None):
+        if self.multiple:
+            self._finish(paths)
+        elif len(paths) != 1:
+            self.selection_var.set("此入口一次只能选择一个文件或目录。")
+        else:
+            self.address_var.set(str(paths[0]))
+            self.go_to_address()
 
     def create_folder(self) -> None:
         name = simpledialog.askstring(APP_TITLE, "新文件夹名称：", parent=self.window)
@@ -1235,7 +1283,30 @@ class PathPickerDialog:
             messagebox.showerror(APP_TITLE, f"无法创建文件夹：\n{error}", parent=self.window)
 
     def confirm(self) -> None:
+        # An edited address takes precedence over the old directory/list selection.
+        try:
+            address = single_path(self.address_var.get(), self.current_dir)
+        except (ValueError, OSError) as error:
+            self.selection_var.set(str(error))
+            return
+        if self.select_mode == "folder":
+            if address.is_dir():
+                self._finish(address)
+            else:
+                self.selection_var.set("保存目录不存在，请先使用「新建文件夹」。")
+            return
+        if address != self.current_dir:
+            self.go_to_address()
+            if address.is_file() and self._accepted_file(address.name):
+                self._finish([address] if self.multiple else address)
+            return
         if self.select_mode != "folder":
+            if self.multiple:
+                paths = [self.items[i][0] for i in self.listbox.curselection()
+                         if not self.items[i][1]]
+                if paths:
+                    self._finish(paths)
+                return
             item = self._selected_item()
             if item is None or item[1]:
                 return
@@ -1244,11 +1315,17 @@ class PathPickerDialog:
             self._finish(self.current_dir)
 
     def _finish(self, path: Path) -> None:
+        if self.multiple and isinstance(path, Path):
+            path = [path]
+        self.drop.close()
+        self.window.after_cancel(self._focus_job)
         self.window.grab_release()
         self.window.destroy()
         self.on_select(path)
 
     def close(self) -> None:
+        self.drop.close()
+        self.window.after_cancel(self._focus_job)
         self.window.grab_release()
         self.window.destroy()
 
@@ -1315,6 +1392,8 @@ class RecorderApp:
         self.page_var = tk.StringVar(value="record")
 
         self._build_ui()
+        self.file_drop = WindowsFileDrop(self.root, self._drop_paths)
+        self.root.bind("<Control-v>", self._paste_files, add="+")
         self._poll_events()
         self._update_timers()
         self._refresh_mode()
@@ -1327,12 +1406,12 @@ class RecorderApp:
         brand.pack(side="left", padx=22, pady=12)
         icon = tk.Canvas(brand, width=34, height=34, bg=Theme.header, highlightthickness=0)
         icon.pack(side="left")
-        icon.create_oval(2, 2, 32, 32, fill=Theme.accent_soft, outline="")
-        icon.create_rectangle(10, 11, 23, 22, outline=Theme.accent, width=2)
-        icon.create_oval(14, 14, 19, 19, fill=Theme.accent, outline="")
-        tk.Label(brand, text="录制工坊", bg=Theme.header, fg=Theme.text,
+        self._brand_icon = ImageTk.PhotoImage(
+            studio_icon().resize((34, 34), Image.Resampling.LANCZOS), master=self.root)
+        icon.create_image(0, 0, image=self._brand_icon, anchor="nw")
+        tk.Label(brand, text=APP_TITLE, bg=Theme.header, fg=Theme.text,
                  font=("Microsoft YaHei UI", 12, "bold")).pack(side="left", padx=(10, 8))
-        tk.Label(brand, text="STUDIO", bg=Theme.header, fg=Theme.muted,
+        tk.Label(brand, text="POTATO FACTORY", bg=Theme.header, fg=Theme.muted,
                  font=("Segoe UI", 9)).pack(side="left")
         tk.Label(toolbar, textvariable=self.breadcrumb_var, bg=Theme.header, fg=Theme.muted,
                  font=Fonts.small).pack(side="left", padx=34)
@@ -1350,13 +1429,23 @@ class RecorderApp:
         self.nav_record.pack(fill="x", padx=12)
         self.nav_edit = NavButton(sidebar, "剪辑与导出", lambda: self._show_page("edit"), icon="edit")
         self.nav_edit.pack(fill="x", padx=12, pady=(6, 0))
-        tk.Frame(sidebar, bg="#dedee5", height=1).pack(fill="x", padx=24, pady=(24, 16))
-        tk.Label(sidebar, text="让演示更出彩", bg=Theme.sidebar, fg=Theme.text_dim,
+        self.nav_soften = NavButton(sidebar, "声音柔化", lambda: self._show_page("soften"), icon="audio")
+        self.nav_soften.pack(fill="x", padx=12, pady=(6, 0))
+        self.nav_audio_convert = NavButton(sidebar, "视频转音频",
+                                           lambda: self.open_conversion_page("audio"), icon="convert")
+        self.nav_audio_convert.pack(fill="x", padx=12, pady=(6, 0))
+        self.nav_compress = NavButton(sidebar, "视频压缩",
+                                      lambda: self.open_conversion_page("compress"), icon="compress")
+        self.nav_compress.pack(fill="x", padx=12, pady=(6, 0))
+        tk.Frame(sidebar, bg=Theme.border, height=1).pack(fill="x", padx=24, pady=(24, 16))
+        tk.Label(sidebar, text="你的本地媒体工作台", bg=Theme.sidebar, fg=Theme.text_dim,
                  font=Fonts.small).pack(anchor="w", padx=24)
-        tk.Label(sidebar, text="自动缩放\n平滑光标\n电影感运镜", bg=Theme.sidebar, fg=Theme.muted,
+        tk.Label(sidebar, text="录下灵感\n整理声音\n轻装分享", bg=Theme.sidebar, fg=Theme.muted,
                  font=Fonts.small, justify="left", height=5).pack(anchor="w", padx=24, pady=(4, 0))
         footer = tk.Frame(sidebar, bg=Theme.sidebar)
         footer.pack(side="bottom", fill="x", padx=24, pady=24)
+        tk.Label(footer, text=APP_AUTHOR, bg=Theme.sidebar, fg=Theme.text_dim,
+                 font=Fonts.small).pack(anchor="w", pady=(0, 12))
         self.open_recordings_button = PillButton(
             footer, "打开录制文件夹", self.open_recordings_folder, variant="ghost", width=14)
         self.open_recordings_button.pack(anchor="w", pady=(0, 14))
@@ -1371,6 +1460,9 @@ class RecorderApp:
         self.edit_page = tk.Frame(self.main, bg=Theme.bg)
         self._build_record_page()
         self._build_edit_page()
+        self.soften_page = AudioSoftenerPage(self)
+        self.audio_convert_page = MediaConversionPage(self, "audio")
+        self.compress_page = MediaConversionPage(self, "compress")
         self.root.bind("<MouseWheel>", self._scroll_record_page, add="+")
         self._show_page("record")
 
@@ -1449,8 +1541,11 @@ class RecorderApp:
         folder_row.columnconfigure(0, weight=1)
         self.folder_entry = RoundedEntry(folder_row, self.folder_var, width=12)
         self.folder_entry.grid(row=0, column=0, sticky="ew")
+        self.folder_entry.drop_paths = self._set_record_folder
         self.browse_button = PillButton(folder_row, "选择", self.choose_folder, variant="ghost", width=5)
         self.browse_button.grid(row=0, column=1, padx=(8, 0))
+        tk.Label(folder_row, text="可粘贴完整目录或拖入文件夹", bg=Theme.card, fg=Theme.muted,
+                 font=("Microsoft YaHei UI", 8)).grid(row=1, column=0, columnspan=2, sticky="w", pady=(5, 0))
         audio_row = tk.Frame(settings, bg=Theme.card)
         audio_row.grid(row=8, column=0, sticky="ew", pady=(16, 4))
         tk.Label(audio_row, text="声音降噪", bg=Theme.card, fg=Theme.text_dim,
@@ -1526,6 +1621,13 @@ class RecorderApp:
         self.preview_canvas.grid(row=1, column=0, sticky="ew")
         self._show_preview_message("打开一段录音或录像，开始整理你的精彩片段。")
         self.preview_canvas.bind("<Configure>", self._resize_preview)
+        self.editor_path_input = PathInput(preview_card, self._open_input_paths, self.export_status_var)
+        self.editor_path_input.grid(row=3, column=0, sticky="ew", pady=(12, 0))
+        tk.Label(preview_card, text="可粘贴路径或拖入文件；目录可直接定位后选择，剪辑一次打开一个文件。",
+                 bg=Theme.card, fg=Theme.muted, font=Fonts.small).grid(
+                     row=4, column=0, sticky="w", pady=(6, 0))
+        tk.Label(preview_card, textvariable=self.export_status_var, bg=Theme.card, fg=Theme.text_dim,
+                 font=Fonts.small, wraplength=660, justify="left").grid(row=5, column=0, sticky="w")
         player = tk.Frame(preview_card, bg=Theme.card)
         player.grid(row=2, column=0, sticky="ew", pady=(12, 0))
         player.columnconfigure(1, weight=1)
@@ -1563,26 +1665,54 @@ class RecorderApp:
         bottom = tk.Frame(inner, bg=Theme.bg)
         bottom.grid(row=3, column=0, sticky="ew", pady=(14, 0))
         PillButton(bottom, "移除切分点", self.remove_selected_splits, variant="ghost", width=12).pack(side="left")
-        self.export_audio_button = PillButton(bottom, "分离音频", self.export_audio, variant="success", width=10)
+        self.export_audio_button = PillButton(bottom, "视频转音频", self.export_audio, variant="success", width=12)
         self.export_audio_button.pack(side="right")
         self.export_button = PillButton(bottom, "导出片段", self.export_segments, variant="primary", width=12)
         self.export_button.pack(side="right", padx=(0, 8))
+        PillButton(bottom, "声音柔化", self.soften_current_media, variant="ghost", width=10).pack(side="left", padx=8)
+        PillButton(bottom, "视频压缩", lambda: self.open_conversion_page("compress", use_current=True),
+                   variant="ghost", width=10).pack(side="left")
         tk.Label(inner, textvariable=self.export_status_var, bg=Theme.bg, fg=Theme.muted,
                  font=Fonts.small).grid(row=4, column=0, sticky="w", pady=(8, 0))
 
     def _show_page(self, page: str) -> None:
-        if self.state not in {"idle"} and page == "edit":
+        if self.state != "idle" and page != "record":
             return
+        self.soften_page.stop_preview()
+        if page != "edit":
+            self.stop_playback()
         self.page_var.set(page)
-        self.breadcrumb_var.set("工作空间  /  " + ("录制" if page == "record" else "剪辑与导出"))
-        self.record_page.pack_forget()
-        self.edit_page.pack_forget()
-        if page == "record":
-            self.record_page.pack(fill="both", expand=True)
-        else:
-            self.edit_page.pack(fill="both", expand=True)
+        titles = {"record": "录制", "edit": "剪辑与导出", "soften": "声音柔化",
+                  "audio_convert": "视频转音频", "compress": "视频压缩"}
+        self.breadcrumb_var.set("工作空间  /  " + titles[page])
+        pages = {"record": self.record_page, "edit": self.edit_page, "soften": self.soften_page,
+                 "audio_convert": self.audio_convert_page, "compress": self.compress_page}
+        for item in pages.values():
+            item.pack_forget()
+        pages[page].pack(fill="both", expand=True)
         self.nav_record.set_active(page == "record")
         self.nav_edit.set_active(page == "edit")
+        self.nav_soften.set_active(page == "soften")
+        self.nav_audio_convert.set_active(page == "audio_convert")
+        self.nav_compress.set_active(page == "compress")
+
+    def background_processing(self) -> bool:
+        return any(page.running for page in
+                   (self.soften_page, self.audio_convert_page, self.compress_page))
+
+    def open_conversion_page(self, operation: str, use_current: bool = False) -> None:
+        if self.state != "idle":
+            return
+        page = self.audio_convert_page if operation == "audio" else self.compress_page
+        if use_current:
+            page.use_current()
+        self._show_page("audio_convert" if operation == "audio" else "compress")
+
+    def soften_current_media(self) -> None:
+        if self.state != "idle":
+            return
+        self.soften_page.use_current()
+        self._show_page("soften")
 
     def _draw_status_dot(self, color: str) -> None:
         self.status_dot.delete("all")
@@ -1617,7 +1747,9 @@ class RecorderApp:
             self._set_screen_options(self.state == "idle")
 
     def _scroll_record_page(self, event: tk.Event) -> None:
-        canvas = self.record_canvas if self.page_var.get() == "record" else self.edit_canvas
+        canvas = {"record": self.record_canvas, "edit": self.edit_canvas,
+                  "soften": self.soften_canvas, "audio_convert": self.audio_convert_canvas,
+                  "compress": self.compress_convert_canvas}[self.page_var.get()]
         canvas.yview_scroll(-int(event.delta / 120), "units")
 
     def _set_screen_options(self, enabled: bool) -> None:
@@ -1645,6 +1777,73 @@ class RecorderApp:
             lambda selected: self.folder_var.set(str(selected)),
         )
 
+    def pick_input_files(self, suffixes, on_select, title="添加文件"):
+        return PathPickerDialog(self.root, title,
+                                self._nearest_existing_folder(self.folder_var.get()),
+                                on_select, select_mode="media", suffixes=suffixes, multiple=True)
+
+    def pick_output_folder(self, initial, on_select):
+        return PathPickerDialog(self.root, "选择保存目录",
+                                self._nearest_existing_folder(str(initial)), on_select)
+
+    def _set_record_folder(self, paths):
+        if self.state != "idle" or self.background_processing():
+            self.status_var.set("请等待当前录制或处理结束后修改目录。")
+            return
+        if len(paths) == 1 and Path(paths[0]).is_dir():
+            self.folder_var.set(str(paths[0]))
+            self.status_var.set("已更新保存目录")
+        else:
+            self.status_var.set("保存位置请拖入一个文件夹。")
+
+    def _open_input_paths(self, paths):
+        if self.state != "idle" or self.background_processing():
+            self.export_status_var.set("请等待当前录制或处理结束后打开文件。")
+            return
+        if len(paths) != 1:
+            self.export_status_var.set("剪辑一次打开一个文件；批量处理请使用声音柔化或视频工具。")
+            return
+        path = single_path(str(paths[0]))
+        self._show_page("edit")
+        if path.is_dir():
+            PathPickerDialog(self.root, "选择要剪辑的文件", path, self.load_media, select_mode="media")
+        elif path.is_file() and path.suffix.lower() in EDITOR_SUFFIXES:
+            self.load_media(path)
+        else:
+            self.export_status_var.set("文件不存在或格式不支持；剪辑支持 MP3、MP4、MOV、MKV、M4A。")
+
+    def _drop_paths(self, paths, target=None):
+        page = {"soften": self.soften_page, "audio_convert": self.audio_convert_page,
+                "compress": self.compress_page}.get(self.page_var.get())
+        if self.state != "idle" or self.background_processing():
+            (page.status if page else self.status_var).set("请等待当前录制或处理完成后添加。")
+            return
+        widget = target
+        while widget is not None:
+            handler = getattr(widget, "drop_paths", None)
+            if handler:
+                handler(paths)
+                return
+            widget = getattr(widget, "master", None)
+        if page:
+            page.add_files(paths)
+        elif self.page_var.get() == "record" and len(paths) == 1 and Path(paths[0]).is_dir():
+            self._set_record_folder(paths)
+        else:
+            self._open_input_paths(paths)
+
+    def _paste_files(self, event):
+        # Entry/Text class bindings already implement ordinary text paste.
+        if event.widget.winfo_class() in {"Entry", "TEntry", "Text", "Spinbox", "TCombobox"}:
+            return
+        try:
+            paths = clipboard_paths(self.root)
+            if paths:
+                self._drop_paths(paths)
+        except (tk.TclError, ValueError, OSError):
+            self.status_var.set("剪贴板中没有可添加的文件路径。")
+        return "break"
+
     def _open_folder(self, folder: Path) -> None:
         try:
             folder.mkdir(parents=True, exist_ok=True)
@@ -1662,7 +1861,11 @@ class RecorderApp:
             if not value:
                 messagebox.showwarning(APP_TITLE, "请先选择保存位置。")
                 return
-            folder = Path(value).expanduser()
+            try:
+                folder = single_path(value)
+            except (ValueError, OSError) as error:
+                messagebox.showwarning(APP_TITLE, str(error))
+                return
         self._open_folder(folder)
 
     def open_media_folder(self) -> None:
@@ -1671,7 +1874,10 @@ class RecorderApp:
 
     @staticmethod
     def _nearest_existing_folder(value: str) -> Path:
-        folder = Path(value.strip()).expanduser() if value.strip() else Path.home()
+        try:
+            folder = single_path(value) if value.strip() else Path.home()
+        except (ValueError, OSError):
+            folder = Path.home()
         while not folder.is_dir() and folder != folder.parent:
             folder = folder.parent
         return folder if folder.is_dir() else Path.home()
@@ -1734,6 +1940,7 @@ class RecorderApp:
             self._show_preview_message(self._preview_message)
 
     def load_media(self, path: Path) -> None:
+        self.soften_page.stop_preview()
         self.stop_playback()
         suffix = path.suffix.lower()
         try:
@@ -1937,25 +2144,7 @@ class RecorderApp:
         )
 
     def export_audio(self) -> None:
-        if self.media_path is None:
-            messagebox.showwarning(APP_TITLE, "请先打开一个文件。")
-            return
-        if self.media_kind == "audio":
-            messagebox.showinfo(APP_TITLE, "当前已经是音频文件。")
-            return
-        try:
-            if not media_has_audio(self.media_path):
-                messagebox.showwarning(APP_TITLE, "这段录像里没有可分离的音频。")
-                return
-        except Exception as error:
-            messagebox.showerror(APP_TITLE, f"无法读取这个文件：\n{error}")
-            return
-        PathPickerDialog(
-            self.root,
-            "选择音频保存位置",
-            self.media_path.parent,
-            self._start_audio_export,
-        )
+        self.open_conversion_page("audio", use_current=True)
 
     def _start_export(self, parent: Path) -> None:
         if self.media_path is None:
@@ -2012,13 +2201,18 @@ class RecorderApp:
     def start_recording(self) -> None:
         if self.state != "idle":
             return
+        if self.background_processing():
+            messagebox.showinfo(APP_TITLE, "正在处理媒体，请等待完成或取消后再录制。")
+            return
+        self.soften_page.stop_preview()
         folder_text = self.folder_var.get().strip()
         if not folder_text:
             messagebox.showwarning(APP_TITLE, "请先选择保存位置。")
             return
-        folder = Path(folder_text).expanduser()
         mode = self.mode_var.get()
         try:
+            folder = single_path(folder_text)
+            self.folder_var.set(str(folder))
             stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             self._recording_stamp = stamp
             filename = output_filename(self.filename_var.get(), mode, stamp)
@@ -2188,7 +2382,12 @@ class RecorderApp:
         try:
             while True:
                 event, payload = self.events.get_nowait()
-                if event == "started":
+                if event == "media_job":
+                    page, kind, data = payload
+                    page.handle_event(kind, data)
+                elif event.startswith("soften_"):
+                    self.soften_page.handle_event(event, payload)
+                elif event == "started":
                     if self.state == "stopping":
                         continue
                     self.state = "recording"
@@ -2306,6 +2505,11 @@ class RecorderApp:
         self._timer_job = self.root.after(200, self._update_timers)
 
     def on_close(self) -> None:
+        if self.background_processing():
+            self.close_after_save = True
+            for page in (self.soften_page, self.audio_convert_page, self.compress_page):
+                page.cancel()
+            return
         if self.recorder and self.state != "idle":
             if self.state in {"processing", "stopping"}:
                 self.close_after_save = True
@@ -2318,12 +2522,14 @@ class RecorderApp:
             if self.state != "idle":
                 return
         self._restore_from_capture()
+        self.soften_page.stop_preview()
         self.stop_playback()
         if self.mixer_ready:
             pygame.mixer.quit()
         for job in (self._poll_job, self._timer_job):
             if job is not None:
                 self.root.after_cancel(job)
+        self.file_drop.close()
         self.root.destroy()
 
 

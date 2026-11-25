@@ -4,6 +4,8 @@
 
 | 版本 | 平台 | 构建 | 安装包 | 记录 |
 | --- | --- | --- | --- | --- |
+| 2.1.1 | Mac Intel | `20261125_081606_f8cb734f` | [下载](https://github.com/RyanGo3/recording-studio/releases/download/v2.1.1/PotatoFactory-v2.1.1-macos-x86_64.zip) | [详情与校验](v2.1.1/20261125_081606_f8cb734f/) |
+| 2.1.1 | Mac 苹果 M 系列 | `20261125_081542_a939d604` | [下载](https://github.com/RyanGo3/recording-studio/releases/download/v2.1.1/PotatoFactory-v2.1.1-macos-arm64.zip) | [详情与校验](v2.1.1/20261125_081542_a939d604/) |
 | 2.1.1 | Windows x64 | `20261125_145337_d13224f6` | [下载](https://github.com/RyanGo3/recording-studio/releases/download/v2.1.1/PotatoFactory-v2.1.1-windows-x64.zip) | [详情与校验](v2.1.1/20261125_145337_d13224f6/) |
 | 2.1.0 | Windows x64 | `20261124_175605_99515761` | [下载](https://github.com/RyanGo3/recording-studio/releases/download/v2.1.0/PotatoFactory-v2.1.0-windows-x64.zip) | [详情与校验](v2.1.0/20261124_175605_99515761/) |
 
@@ -19,7 +21,7 @@ packages/
       SHA256SUMS.txt
 ```
 
-GitHub 普通 Git 仓库阻止超过 100 MiB 的单个文件；当前完整包大于该限制，因此二进制作为 Release 附件存放。本目录只提交体积很小的索引，旧版记录保留。
+安装包 ZIP 与配套 TXT 使用说明统一作为 Release 附件存放。Windows 完整包超过普通 Git 的 100 MiB 单文件限制；本目录只提交体积很小的索引，旧版记录保留。
 
 ## 构建与发布
 

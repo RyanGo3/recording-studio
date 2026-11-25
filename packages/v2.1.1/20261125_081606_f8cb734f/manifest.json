@@ -1,0 +1,54 @@
+{
+  "app_name": "土豆工厂",
+  "author": "大土豆|Ryan",
+  "version": "2.1.1",
+  "platform": "macos-x86_64",
+  "build_id": "20261125_081606_f8cb734f",
+  "minimum_macos": "15.0",
+  "built_at_utc": "2026-11-25T08:18:23.158436+00:00",
+  "source_base_commit": "bd1d0909d24310a2740472ecb4f9e1c1c0de8cda",
+  "source_sha256": {
+    "app.py": "5f4aaf31877633cd5037d36a9e1d79849b8c82202f4dccc001b558c6cb3ffe66",
+    "apple_ui.py": "9bbfea3fb681089bbed463a9046cb709cb045712c91870b511006a0150a544a1",
+    "audio_sources.py": "d7b9a1acc01c09530552749262d3a96b9f84b1f7655a2094bb6bb68bf28b3cd8",
+    "audio_processing.py": "b0e7141252930c18ca8a5358e8bcd18ba3f535371d07733df771246ee53d4f8a",
+    "recording_v2.py": "3782652a121f6b92f6e535741df378dbb258830818d656a8a04b078e8bcec14f",
+    "cinematic.py": "3594327dc47d0fb3b853c40a194596385e3a51afe1229dff35e8a96d0d323cf4",
+    "audio_softening.py": "8ef16ba4a7fc38358a0e67383b73f6a271a1a9e854eb9350299c1a7fde359cad",
+    "softening_ui.py": "0743386be1caef5f4897827a651a5cb84ef52295f81bd8d4d25f9143a5380d05",
+    "media_conversion.py": "cf478d45e40c4475370daa3aba6cceb5fc78b6538a59b7b4e0370c73db088d49",
+    "conversion_ui.py": "3723d3b92ac52f30e3adb8dc31beb737d259a55311f3cfd3a778e63257af2724",
+    "path_inputs.py": "4392bafb1a044fc909a0b8c92b1379d57678db1549a66a89e701e44ed7612bbb",
+    "macos_capture.py": "de3c78ca6de6d712d9be641312c48f5a5bc3cc6162072dbbac876367108a40df"
+  },
+  "release_tag": "v2.1.1",
+  "release_url": "https://github.com/RyanGo3/recording-studio/releases/tag/v2.1.1",
+  "build_run_url": "https://github.com/RyanGo3/recording-studio/actions/runs/45574575359",
+  "signing": "ad-hoc; not notarized",
+  "validation": "bundled GUI and FFmpeg smoke test; real recording requires manual acceptance",
+  "verification": {
+    "regular_files_verified": 713,
+    "native_binaries_checked": 268,
+    "external_non_system_libraries": []
+  },
+  "assets": [
+    {
+      "name": "PotatoFactory-v2.1.1-macos-x86_64.zip",
+      "bytes": 68455365,
+      "sha256": "f50084e991d8665b5b444b8a15f3f282c26e0ba043d1e56163862e0b2c250b3d",
+      "download_url": "https://github.com/RyanGo3/recording-studio/releases/download/v2.1.1/PotatoFactory-v2.1.1-macos-x86_64.zip"
+    },
+    {
+      "name": "土豆工厂-MacIntel版简易说明.txt",
+      "bytes": 1458,
+      "sha256": "e92f2cac8a57c65edd010ebf09bff327fe0e073b68763b70b1067f39d0c00905",
+      "download_url": "https://github.com/RyanGo3/recording-studio/releases/download/v2.1.1/%E5%9C%9F%E8%B1%86%E5%B7%A5%E5%8E%82-MacIntel%E7%89%88%E7%AE%80%E6%98%93%E8%AF%B4%E6%98%8E.txt"
+    },
+    {
+      "name": "土豆工厂-Mac Intel版使用说明.txt",
+      "bytes": 10890,
+      "sha256": "a7fa03b979be05f1a767c9c9677a9d3e41094fe89b04d846adf5c914e665dc5e",
+      "download_url": "https://github.com/RyanGo3/recording-studio/releases/download/v2.1.1/%E5%9C%9F%E8%B1%86%E5%B7%A5%E5%8E%82-Mac%20Intel%E7%89%88%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E.txt"
+    }
+  ]
+}

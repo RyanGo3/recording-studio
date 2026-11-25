@@ -2,14 +2,27 @@
 
 作者：**大土豆|Ryan**
 
-Windows 桌面录音、录屏与简单剪辑工具。支持系统声音、麦克风混录、自动点击缩放、平滑光标和电影感画面；录音导出 MP3，录像导出 H.264 / AAC MP4。
+Windows / macOS 桌面录音、录屏与简单剪辑工具。支持系统声音、麦克风混录、自动点击缩放、平滑光标和电影感画面；录音导出 MP3，录像导出 H.264 / AAC MP4。
 
-macOS 实验版已加入适配和 `.app` 构建入口，需在 Mac 原生环境构建。
-系统声音需要 BlackHole 2ch；当前尚未完成 Mac 真机验收，详见 [macOS 构建与使用](docs/MACOS.md)。
+## 下载与使用
+
+当前成品版本为 **v2.1.1**，从 [GitHub Release](https://github.com/RyanGo3/recording-studio/releases/tag/v2.1.1) 下载：
+
+| 电脑 | 安装包 | 使用说明 |
+| --- | --- | --- |
+| Windows 10 / 11，64 位 | [Windows x64](https://github.com/RyanGo3/recording-studio/releases/download/v2.1.1/PotatoFactory-v2.1.1-windows-x64.zip) | [Windows 说明](docs/USER_GUIDE.md) |
+| Mac，苹果 M 系列芯片，macOS 15+ | [Mac 苹果 M 系列](https://github.com/RyanGo3/recording-studio/releases/download/v2.1.1/PotatoFactory-v2.1.1-macos-arm64.zip) | [Mac 简易说明](docs/MACOS_QUICK_START.md) |
+| Mac，Intel 芯片，macOS 15+ | [Mac Intel](https://github.com/RyanGo3/recording-studio/releases/download/v2.1.1/PotatoFactory-v2.1.1-macos-x86_64.zip) | [Mac 简易说明](docs/MACOS_QUICK_START.md) |
+
+Mac 包完整解压后，将 `PotatoFactory.app` 拖入「应用程序」即可，无需自行构建或安装 Python、FFmpeg。
+录电脑声音需额外配置 BlackHole 2ch，详见 [Mac 详细说明](docs/MACOS_USER_GUIDE.md)。
+当前 Mac 实验版已通过两种架构的云端构建、界面启动和编码检查，实际录屏与音频设备仍需人工验收。
+
+全部版本、构建记录和 SHA-256 校验见 [安装包目录](packages/README.md)。文档入口见 [说明目录](docs/README.md)。
 
 本仓库从原项目的 v2 整理而来。运行代码位于根目录的 Python 模块，不依赖旧版本、历史构建或原电脑的项目路径。新增工具与文件操作优化需使用当前源码或基于当前源码重新构建的版本。
 
-## 直接使用 EXE
+## Windows 安装
 
 1. 在 [安装包目录](packages/README.md) 按版本下载便携包；当前版本为 `PotatoFactory-v2.1.1-windows-x64.zip`。本地构建输出在 `releases/<构建编号>/`，GitHub 上的历史 `RecordingStudio` 包不包含本轮更新。
 2. **完整解压**到可写入目录。
@@ -89,7 +102,7 @@ $env:STUDIO_DESKTOP_TESTS = "1"
 recording-studio/
 ├── app.py                   # 程序入口、录音、预览和剪辑界面
 ├── apple_ui.py              # 主题和 Tkinter 控件
-├── audio_sources.py         # WASAPI 音源采集、WAV / RF64 写入
+├── audio_sources.py         # Windows / Mac 音源采集、WAV / RF64 写入
 ├── audio_processing.py      # 降噪和峰值限制参数
 ├── audio_softening.py       # 高音片段识别、音色与音量柔化及导出
 ├── softening_ui.py          # 原生声音柔化页面、批量任务和对比试听
@@ -100,8 +113,10 @@ recording-studio/
 ├── macos_capture.py         # macOS 主屏采集、权限和光标接口
 ├── assets/studio.ico        # EXE 图标
 ├── docs/                    # 使用、架构、构建和验收说明
+├── packages/                # 按版本和构建编号保存的下载索引、清单与校验
 ├── scripts/                 # FFmpeg 准备和打包脚本
 ├── tests/                   # 自动化测试
+├── .github/workflows/       # 自动化测试和 Mac 云端构建
 ├── tools/                   # FFmpeg；二进制仅在 Release 中分发
 ├── licenses/                # 第三方原始许可文本
 ├── requirements.txt         # 锁定运行依赖
@@ -113,7 +128,7 @@ recording-studio/
 
 ## 保存与恢复
 
-默认保存到 `D:\土豆工厂`；没有 D 盘时保存到用户的 `Videos\土豆工厂`。若对应位置已有旧的「录制工坊」目录，则继续使用旧目录。可以直接粘贴完整目录、拖入文件夹或在选择器地址栏输入路径，不需要逐层查找。
+Windows 默认保存到 `D:\土豆工厂`；没有 D 盘时保存到用户的 `Videos\土豆工厂`。若对应位置已有旧的「录制工坊」目录，则继续使用旧目录。Mac 默认保存到 `~/Movies/土豆工厂`。可在软件中更改保存位置；Mac 文件输入方式见对应说明。
 
 录制期间会在保存目录创建隐藏的 `.文件名_session_随机编号`，用于保存分段、音源、光标轨迹与处理日志。**成功保存后自动清理本次临时目录**；异常或处理失败时保留，并提示恢复位置。录制前请为长时间、高分辨率录屏预留足够磁盘空间。
 

@@ -1,0 +1,3 @@
+f50084e991d8665b5b444b8a15f3f282c26e0ba043d1e56163862e0b2c250b3d  PotatoFactory-v2.1.1-macos-x86_64.zip
+e92f2cac8a57c65edd010ebf09bff327fe0e073b68763b70b1067f39d0c00905  土豆工厂-MacIntel版简易说明.txt
+a7fa03b979be05f1a767c9c9677a9d3e41094fe89b04d846adf5c914e665dc5e  土豆工厂-Mac Intel版使用说明.txt

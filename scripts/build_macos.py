@@ -137,7 +137,8 @@ def main() -> None:
     subprocess.run(["/usr/bin/codesign", "--verify", "--deep", "--strict", str(app)], check=True)
     subprocess.run([str(app / "Contents" / "MacOS" / "PotatoFactory"), "--smoke-test"],
                    cwd=work, check=True, timeout=120)
-    shutil.copy2(ROOT / "docs" / "MACOS.md", bundle / "macOS使用说明.md")
+    shutil.copy2(ROOT / "docs" / "MACOS_USER_GUIDE.md", bundle / "macOS使用说明.md")
+    shutil.copy2(ROOT / "docs" / "MACOS_QUICK_START.md", bundle / "macOS简易说明.txt")
     (bundle / "README.txt").write_text(
         "土豆工厂 · macOS 实验版\n作者：大土豆|Ryan\n\n"
         "将 PotatoFactory.app 拖到“应用程序”后打开，无需安装 Python 或 FFmpeg。\n"
@@ -145,7 +146,8 @@ def main() -> None:
         "此包为临时签名，尚未通过 Apple Developer ID 签名和公证。\n"
         f"系统要求：macOS {minimum_macos} 或更新版本，{architecture}。\n"
         "系统声音需另行安装 BlackHole 2ch 并配置多输出设备。\n"
-        "仅支持主显示器，Retina 录像按逻辑分辨率导出；详见 macOS使用说明.md。\n"
+        "先看 macOS简易说明.txt；详细设置见 macOS使用说明.md。\n"
+        "仅支持主显示器，Retina 录像按逻辑分辨率导出。\n"
         "需要在实际 Mac 上验收录屏、声音和暂停同步后再正式分发。\n",
         encoding="utf-8")
     from build import SOURCES

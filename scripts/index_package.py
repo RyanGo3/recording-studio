@@ -8,6 +8,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY = "https://github.com/RyanGo3/recording-studio"
+PLATFORM_LABELS = {
+    "windows-x64": "Windows x64",
+    "macos-arm64": "Mac 苹果 M 系列",
+    "macos-x86_64": "Mac Intel",
+}
 
 
 def register(release: Path):
@@ -54,13 +59,20 @@ def register(release: Path):
         "下载入口在对应 GitHub Release 附件上传后可用。重复构建保留独立目录；"
         "同版本发布新构建时请先更新版本号，避免覆盖已发布附件。\n",
         encoding="utf-8")
+    update_catalog()
+    return folder
+
+
+def update_catalog():
     records = []
     for path in (ROOT / "packages").glob("v*/*/manifest.json"):
         item = json.loads(path.read_text(encoding="utf-8"))
         asset = item["assets"][0]
         relative = path.parent.relative_to(ROOT / "packages").as_posix()
         records.append((item["built_at_utc"],
-                        f"| {item['version']} | Windows x64 | `{item['build_id']}` | "
+                        f"| {item['version']} | "
+                        f"{PLATFORM_LABELS.get(item['platform'], item['platform'])} | "
+                        f"`{item['build_id']}` | "
                         f"[下载]({asset['download_url']}) | [详情与校验]({relative}/) |\n"))
     table = "".join(row for _, row in sorted(records, reverse=True))
     (ROOT / "packages" / "README.md").write_text(
@@ -71,8 +83,9 @@ def register(release: Path):
         "| --- | --- | --- | --- | --- |\n" + table +
         "\n## 目录约定\n\n"
         "```text\npackages/\n  README.md\n  v<版本>/\n    <构建编号>/\n      README.md\n      manifest.json\n      SHA256SUMS.txt\n```\n\n"
-        "GitHub 普通 Git 仓库阻止超过 100 MiB 的单个文件；当前完整包大于该限制，"
-        "因此二进制作为 Release 附件存放。本目录只提交体积很小的索引，旧版记录保留。\n\n"
+        "安装包 ZIP 与配套 TXT 使用说明统一作为 Release 附件存放。"
+        "Windows 完整包超过普通 Git 的 100 MiB 单文件限制；"
+        "本目录只提交体积很小的索引，旧版记录保留。\n\n"
         "## 构建与发布\n\n"
         "1. 修改版本号，运行 `python scripts/build.py`；新包生成于 `releases/<构建编号>/`，"
         "构建完成后自动生成本目录索引。\n"
@@ -83,7 +96,6 @@ def register(release: Path):
         "`python scripts/index_package.py releases/<构建编号>`，只登记并校验，不重新打包。\n\n"
         "[GitHub 大文件说明](https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-large-files-on-github)\n",
         encoding="utf-8")
-    return folder
 
 
 if __name__ == "__main__":

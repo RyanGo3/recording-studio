@@ -35,7 +35,7 @@ jobs:
         with:
           name: PotatoFactory-macos-${{ matrix.architecture }}
           path: |
-            releases/**/*.zip
-            releases/**/build-result.json
+            releases/*/*.zip
+            releases/*/build-result.json
           if-no-files-found: error
           retention-days: 14
